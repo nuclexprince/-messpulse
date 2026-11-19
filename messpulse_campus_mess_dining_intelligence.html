@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessPulse — Campus Mess & Dining Intelligence</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        aws: {
+                            squid: '#232F3E',
+                            dark: '#161E2D',
+                            amber: '#FF9900',
+                            amberHover: '#EC7211',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Toast / Notification Banner (Replaces alert()) -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-aws-squid text-white sticky top-0 z-40 shadow-md border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 sm:h-16 gap-3">
+                <!-- Brand Logo & Challenge Badge -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-aws-amber flex items-center justify-center text-aws-squid font-extrabold text-lg shadow-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h2l2-7 4 14 4-11 2 4h4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-lg tracking-tight text-white">MessPulse</span>
+                                <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                                    Techfest IITB × AWS Ship-It
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-none mt-0.5">Campus Mess & Dining Intelligence</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View Switcher Tabs -->
+                <nav class="flex bg-aws-dark p-1 rounded-xl border border-slate-700/80 self-start sm:self-auto w-full sm:w-auto" aria-label="Primary Views">
+                    <button id="nav-student" onclick="switchView('student')" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 bg-aws-amber text-aws-squid shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        <span>Student Feedback Portal</span>
+                    </button>
+                    <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 text-slate-300 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span>Mess Committee Dashboard</span>
+                        <span id="nav-badge-count" class="ml-1 px-1.5 py-0.2 text-xs rounded-full bg-slate-700 text-slate-200">0</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- AWS Architecture Pill Bar -->
+    <div class="bg-slate-900 text-slate-300 border-b border-slate-800 text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center gap-1.5 font-semibold text-amber-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    AWS Serverless Stack:
+                </span>
+                <span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-medium">AWS Amplify</span>
+                <span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-medium">API Gateway + Lambda</span>
+                <span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-medium">Amazon DynamoDB</span>
+                <span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-amber-300 font-medium">Amazon Comprehend NLP</span>
+                <span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-emerald-300 font-medium">Amazon SNS Alerts</span>
+            </div>
+            <div class="text-slate-400 hidden lg:block">
+                Free Tier Architecture • Zero Idle Cost
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- ========================================================= -->
+        <!-- VIEW 1: STUDENT FEEDBACK PORTAL (Mobile-First QR Flow)    -->
+        <!-- ========================================================= -->
+        <section id="view-student" class="max-w-xl mx-auto">
+            <!-- QR Context Card -->
+            <div class="bg-gradient-to-r from-aws-squid to-slate-800 text-white rounded-2xl p-5 mb-6 shadow-md border border-slate-700 flex items-center justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-2">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Verified Mess Table QR Scan
+                    </div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Rate Today's Meal</h1>
+                    <p class="text-slate-300 text-sm mt-1">Takes 15 seconds. Your feedback runs through Amazon Comprehend and directly updates the Hostel Mess Council.</p>
+                </div>
+                <div class="hidden sm:flex flex-col items-center justify-center bg-white/10 p-3 rounded-xl border border-white/15 shrink-0">
+                    <svg class="w-10 h-10 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                    <span class="text-[10px] uppercase tracking-wider text-slate-300 mt-1 font-semibold">QR Active</span>
+                </div>
+            </div>
+
+            <!-- Feedback Form Card -->
+            <form id="feedback-form" onsubmit="handleFeedbackSubmit(event)" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7 space-y-6">
+                
+                <!-- Step 1: Hostel / Mess Hall Selection -->
+                <div>
+                    <label for="mess-select" class="block text-sm font-semibold text-slate-800 mb-2">
+                        1. Select Hostel / Dining Hall
+                    </label>
+                    <select id="mess-select" required class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-aws-amber focus:border-aws-amber transition">
+                        <option value="Hostel 4 Mess">Hostel 4 Mess (Old Boys Wing)</option>
+                        <option value="Hostel 12 Dining Hall">Hostel 12 Dining Hall (New Complex)</option>
+                        <option value="Central Mess">Central Mess (Main Academic Block)</option>
+                        <option value="Hostel 10 Girls Mess">Hostel 10 Girls Mess</option>
+                    </select>
+                </div>
+
+                <!-- Step 2: Meal Type Pill Selector -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-800 mb-2">
+                        2. Select Meal Session
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="meal-type-group">
+                        <button type="button" data-meal="Breakfast" onclick="selectMealType('Breakfast')" class="meal-btn p-3 rounded-xl border text-sm font-semibold transition flex flex-col items-center justify-center gap-1 border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100">
+                            <span>Breakfast</span>
+                            <span class="text-[11px] font-normal opacity-75">7:30–9:30 AM</span>
+                        </button>
+                        <button type="button" data-meal="Lunch" onclick="selectMealType('Lunch')" class="meal-btn p-3 rounded-xl border text-sm font-semibold transition flex flex-col items-center justify-center gap-1 border-amber-500 bg-amber-50 text-amber-900 ring-2 ring-amber-500/30">
+                            <span>Lunch</span>
+                            <span class="text-[11px] font-normal opacity-75">12:30–2:30 PM</span>
+                        </button>
+                        <button type="button" data-meal="Snacks" onclick="selectMealType('Snacks')" class="meal-btn p-3 rounded-xl border text-sm font-semibold transition flex flex-col items-center justify-center gap-1 border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100">
+                            <span>Snacks</span>
+                            <span class="text-[11px] font-normal opacity-75">4:30–6:00 PM</span>
+                        </button>
+                        <button type="button" data-meal="Dinner" onclick="selectMealType('Dinner')" class="meal-btn p-3 rounded-xl border text-sm font-semibold transition flex flex-col items-center justify-center gap-1 border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100">
+                            <span>Dinner</span>
+                            <span class="text-[11px] font-normal opacity-75">7:30–9:45 PM</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="selected-meal-type" value="Lunch">
+                </div>
+
+                <!-- Step 3: 1-5 Star Ratings across 3 Dimensions -->
+                <div class="space-y-4 pt-1">
+                    <label class="block text-sm font-semibold text-slate-800">
+                        3. Rate Meal Quality (1 = Poor, 5 = Excellent)
+                    </label>
+
+                    <!-- Taste Rating -->
+                    <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+                        <div>
+                            <div class="font-semibold text-sm text-slate-800">Taste & Seasoning</div>
+                            <div class="text-xs text-slate-500">Flavor, spice balance & freshness</div>
+                        </div>
+                        <div class="flex items-center gap-1" id="stars-taste" data-category="taste"></div>
+                    </div>
+
+                    <!-- Hygiene Rating -->
+                    <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+                        <div>
+                            <div class="font-semibold text-sm text-slate-800">Hygiene & Cleanliness</div>
+                            <div class="text-xs text-slate-500">Plates, counters, water & staff gloves</div>
+                        </div>
+                        <div class="flex items-center gap-1" id="stars-hygiene" data-category="hygiene"></div>
+                    </div>
+
+                    <!-- Portion Rating -->
+                    <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+                        <div>
+                            <div class="font-semibold text-sm text-slate-800">Portion & Serving Speed</div>
+                            <div class="text-xs text-slate-500">Quantity served & queue wait time</div>
+                        </div>
+                        <div class="flex items-center gap-1" id="stars-portion" data-category="portion"></div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Review Text with Live NLP Preview -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="review-text" class="block text-sm font-semibold text-slate-800">
+                            4. Quick Review / Dish Comment
+                        </label>
+                        <span class="text-xs text-slate-500">Analyzed by Comprehend NLP</span>
+                    </div>
+                    <textarea id="review-text" rows="3" required oninput="updateLiveNlpPreview(this.value)" placeholder="e.g., Paneer butter masala was fresh and hot today, though the roti queue moved a bit slow..." class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-aws-amber focus:border-aws-amber transition"></textarea>
+                    
+                    <!-- Quick Suggestion Chips for Fast Mobile Input -->
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        <button type="button" onclick="appendQuickPhrase('Paneer curry was delicious and hot!')" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">+ Delicious & hot</button>
+                        <button type="button" onclick="appendQuickPhrase('Dal was watery and rotis were cold.')" class="text-xs px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition">+ Watery dal / cold roti</button>
+                        <button type="button" onclick="appendQuickPhrase('Clean plates and fast counter service.')" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition">+ Clean & fast</button>
+                    </div>
+
+                    <!-- Live Simulated Amazon Comprehend Preview Box -->
+                    <div id="live-nlp-box" class="mt-3 p-3 rounded-xl bg-slate-900 text-slate-200 text-xs flex flex-wrap items-center justify-between gap-2 border border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-amber-400">Comprehend Live Preview:</span>
+                            <span id="preview-sentiment-badge" class="px-2 py-0.5 rounded-full font-semibold bg-slate-700 text-slate-300">Waiting for text...</span>
+                        </div>
+                        <div id="preview-phrases" class="text-slate-400 italic truncate max-w-xs">
+                            Type a comment to extract key phrases
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional Student Roll / Anonymous Toggle -->
+                <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="anonymous-check" checked class="rounded text-aws-amber focus:ring-aws-amber">
+                        <span>Submit anonymously (Verified IITB Student Token)</span>
+                    </label>
+                    <span class="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded">POST /prod/feedback</span>
+                </div>
+
+                <!-- Submit CTA -->
+                <button type="submit" id="submit-btn" class="w-full py-3.5 px-6 rounded-xl bg-aws-amber hover:bg-aws-amberHover text-aws-squid font-bold text-base shadow-sm transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    <span>Submit Feedback to AWS Lambda</span>
+                </button>
+            </form>
+
+            <!-- Post-Submission Confirmation Card (Hidden initially) -->
+            <div id="submission-success-card" class="hidden mt-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-emerald-900 text-base">Stored in DynamoDB & Scored by Comprehend!</h3>
+                        <p id="submission-summary-text" class="text-sm text-emerald-800 mt-1"></p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button type="button" onclick="switchView('dashboard')" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition shadow-sm">
+                                View Live on Committee Dashboard →
+                            </button>
+                            <button type="button" onclick="resetFormForAnother()" class="px-4 py-2 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold transition">
+                                Submit Another Meal Rating
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- VIEW 2: MESS COMMITTEE DASHBOARD (Analytics & SNS Alerts) -->
+        <!-- ========================================================= -->
+        <section id="view-dashboard" class="hidden space-y-6">
+            
+            <!-- Dashboard Header & Action Controls -->
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl sm:text-2xl font-bold text-slate-900">Mess Committee Intelligence</h1>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>
+                            Live Stream
+                        </span>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-1">Real-time aggregation from Amazon DynamoDB & Amazon Comprehend Sentiment Engine</p>
+                </div>
+
+                <!-- Filter & Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Hostel Filter -->
+                    <select id="dashboard-hostel-filter" onchange="renderDashboard()" class="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-aws-amber">
+                        <option value="ALL">All Campus Mess Halls</option>
+                        <option value="Hostel 4 Mess">Hostel 4 Mess</option>
+                        <option value="Hostel 12 Dining Hall">Hostel 12 Dining Hall</option>
+                        <option value="Central Mess">Central Mess</option>
+                        <option value="Hostel 10 Girls Mess">Hostel 10 Girls Mess</option>
+                    </select>
+
+                    <!-- Trigger Warden SNS Alert Button -->
+                    <button type="button" onclick="triggerSnsAlert()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-sm transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span>Trigger Warden SNS Alert</span>
+                    </button>
+
+                    <!-- Reset Demo Data Button -->
+                    <button type="button" onclick="resetDemoData()" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-sm font-semibold transition flex items-center gap-1.5" title="Restore initial sample dataset">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Reset Demo Data</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Simulated Amazon SNS Alert Modal / Banner (Shown when triggered or spike detected) -->
+            <div id="sns-alert-panel" class="hidden bg-rose-950 text-rose-50 rounded-2xl p-5 border border-rose-700 shadow-lg transition-all">
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-rose-600 text-white">Amazon SNS Dispatch Sent</span>
+                                <span class="text-xs font-mono text-rose-300">Topic: arn:aws:sns:ap-south-1:iitb-mess:warden-alerts</span>
+                            </div>
+                            <h3 class="text-base font-bold text-white mt-1.5" id="sns-alert-title">Emergency Dining Quality Digest Sent to Hostel Warden & Mess Secy</h3>
+                            <p class="text-sm text-rose-200 mt-1" id="sns-alert-body"></p>
+                            <div class="mt-2.5 flex flex-wrap gap-2 text-xs text-rose-300 font-mono">
+                                <span class="bg-rose-900/80 px-2 py-1 rounded border border-rose-800">Recipients: warden-h4@iitb.ac.in, mess-council@iitb.ac.in</span>
+                                <span class="bg-rose-900/80 px-2 py-1 rounded border border-rose-800" id="sns-timestamp"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('sns-alert-panel').classList.add('hidden')" class="self-end sm:self-start px-3 py-1.5 rounded-lg bg-rose-900 hover:bg-rose-800 text-rose-200 text-xs font-semibold">
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Metric Cards Grid (4 Cards) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- KPI 1: Overall Satisfaction Score -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Overall Satisfaction</span>
+                        <span class="p-2 rounded-xl bg-amber-50 text-amber-600">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-baseline gap-2">
+                        <span id="kpi-avg-rating" class="text-3xl font-extrabold text-slate-900">0.0</span>
+                        <span class="text-sm font-medium text-slate-400">/ 5.0</span>
+                    </div>
+                    <p id="kpi-rating-sub" class="text-xs text-emerald-600 font-medium mt-1">Across Taste, Hygiene & Portion</p>
+                </div>
+
+                <!-- KPI 2: Total DynamoDB Responses -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total QR Submissions</span>
+                        <span class="p-2 rounded-xl bg-slate-100 text-slate-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-baseline gap-2">
+                        <span id="kpi-total-count" class="text-3xl font-extrabold text-slate-900">0</span>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">DynamoDB Items</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">100% verified campus QR scans</p>
+                </div>
+
+                <!-- KPI 3: Positive Sentiment Rate (Comprehend) -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Positive Sentiment</span>
+                        <span class="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-baseline gap-2">
+                        <span id="kpi-positive-pct" class="text-3xl font-extrabold text-emerald-600">0%</span>
+                        <span id="kpi-positive-count" class="text-xs font-medium text-slate-500">(0 reviews)</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Amazon Comprehend NLP Score &gt; 0.65</p>
+                </div>
+
+                <!-- KPI 4: Negative Alerts Flagged -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Negative Flags</span>
+                        <span class="p-2 rounded-xl bg-rose-50 text-rose-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-baseline gap-2">
+                        <span id="kpi-negative-pct" class="text-3xl font-extrabold text-rose-600">0%</span>
+                        <span id="kpi-negative-count" class="text-xs font-medium text-slate-500">(0 flagged)</span>
+                    </div>
+                    <p id="kpi-sns-status" class="text-xs text-slate-500 mt-1">Auto-triggers SNS above 35% threshold</p>
+                </div>
+            </div>
+
+            <!-- Charts Row: Meal Ratings Bar Chart + Comprehend Sentiment Breakdown -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Interactive Meal Session Bar Chart (Takes 2 columns on desktop) -->
+                <div class="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-900">Average Rating by Meal Session</h2>
+                            <p class="text-xs text-slate-500">Click any meal bar to filter the live review feed below</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="active-meal-filter-pill" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900">
+                                Filter: <span id="active-meal-filter-name"></span>
+                                <button onclick="clearMealFilter()" class="ml-1 hover:text-rose-700 font-bold">×</button>
+                            </span>
+                            <div class="flex items-center gap-3 text-xs text-slate-500">
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> ≥ 4.0</span>
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-aws-amber"></span> 3.0–3.9</span>
+                                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500"></span> &lt; 3.0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Bar Chart Container -->
+                    <div id="meal-bar-chart" class="grid grid-cols-4 gap-3 sm:gap-6 items-end h-56 pt-6 pb-2 px-2 sm:px-6 bg-slate-50 rounded-xl border border-slate-100">
+                        <!-- Dynamically rendered bars -->
+                    </div>
+
+                    <!-- Dimension Breakdown Mini-Metrics -->
+                    <div class="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100 text-center">
+                        <div class="bg-slate-50 rounded-xl p-2.5">
+                            <div class="text-xs text-slate-500 font-medium">Avg Taste</div>
+                            <div id="dim-taste" class="text-base font-bold text-slate-800 mt-0.5">0.0 ★</div>
+                        </div>
+                        <div class="bg-slate-50 rounded-xl p-2.5">
+                            <div class="text-xs text-slate-500 font-medium">Avg Hygiene</div>
+                            <div id="dim-hygiene" class="text-base font-bold text-slate-800 mt-0.5">0.0 ★</div>
+                        </div>
+                        <div class="bg-slate-50 rounded-xl p-2.5">
+                            <div class="text-xs text-slate-500 font-medium">Avg Portion</div>
+                            <div id="dim-portion" class="text-base font-bold text-slate-800 mt-0.5">0.0 ★</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amazon Comprehend Sentiment & Key Phrases Card -->
+                <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h2 class="text-base sm:text-lg font-bold text-slate-900">Comprehend NLP</h2>
+                            <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-900">DetectSentiment</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-5">Automated classification of student meal feedback</p>
+
+                        <!-- Stacked Sentiment Progress Bar -->
+                        <div class="w-full h-4 rounded-full bg-slate-100 overflow-hidden flex mb-4 shadow-inner">
+                            <div id="bar-pos" class="bg-emerald-500 h-full transition-all duration-500" style="width: 50%"></div>
+                            <div id="bar-neu" class="bg-slate-400 h-full transition-all duration-500" style="width: 25%"></div>
+                            <div id="bar-neg" class="bg-rose-500 h-full transition-all duration-500" style="width: 25%"></div>
+                        </div>
+
+                        <!-- Sentiment Legend Breakdown -->
+                        <div class="space-y-2.5 text-sm">
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100">
+                                <span class="flex items-center gap-2 font-semibold text-emerald-900">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> POSITIVE
+                                </span>
+                                <span id="legend-pos" class="font-bold text-emerald-700">0 (0%)</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
+                                <span class="flex items-center gap-2 font-semibold text-slate-700">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> NEUTRAL
+                                </span>
+                                <span id="legend-neu" class="font-bold text-slate-600">0 (0%)</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 border border-rose-100">
+                                <span class="flex items-center gap-2 font-semibold text-rose-900">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> NEGATIVE
+                                </span>
+                                <span id="legend-neg" class="font-bold text-rose-700">0 (0%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Trending Key Phrases -->
+                    <div class="mt-6 pt-4 border-t border-slate-100">
+                        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2.5">Top Extracted Key Phrases</div>
+                        <div id="trending-phrases-container" class="flex flex-wrap gap-1.5">
+                            <!-- Dynamically populated key phrases -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Student Reviews Feed -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900">Live Student Feedback Stream</h2>
+                        <p class="text-xs text-slate-500">Real-time DynamoDB stream enriched with Amazon Comprehend sentiment badges & key phrases</p>
+                    </div>
+                    <!-- Sentiment Filter Pills -->
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <button onclick="setSentimentFilter('ALL')" id="sfilter-ALL" class="sfilter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-aws-squid text-white transition">All</button>
+                        <button onclick="setSentimentFilter('POSITIVE')" id="sfilter-POSITIVE" class="sfilter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Positive</button>
+                        <button onclick="setSentimentFilter('NEUTRAL')" id="sfilter-NEUTRAL" class="sfilter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Neutral</button>
+                        <button onclick="setSentimentFilter('NEGATIVE')" id="sfilter-NEGATIVE" class="sfilter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Negative</button>
+                    </div>
+                </div>
+
+                <!-- Review Cards List -->
+                <div id="reviews-feed-list" class="divide-y divide-slate-100">
+                    <!-- Dynamically populated review items -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-5 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+            <div>
+                <span class="font-semibold text-slate-700">MessPulse</span> — Built for <span class="font-semibold text-aws-squid">Techfest, IIT Bombay × AWS Ship-It Challenge 2026</span>
+            </div>
+            <div>
+                Serverless Reference Prototype • Powered by AWS Free Tier
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application Logic & Simulated AWS Backend -->
+    <script>
+        /**
+         * ============================================================================
+         * 1. STATE & REALISTIC PRE-POPULATED IITB CAMPUS MESS DATA
+         * ============================================================================
+         */
+        const STORAGE_KEY = 'messpulse_iitb_feedback_v1';
+
+        const INITIAL_DEMO_DATA = [
+            {
+                id: 'ddb-1001',
+                hostel: 'Hostel 4 Mess',
+                mealType: 'Lunch',
+                taste: 5,
+                hygiene: 4,
+                portion: 5,
+                comment: 'Paneer butter masala and jeera rice were super fresh and hot today! Great portion size and fast counter service.',
+                timestamp: '12 mins ago',
+                studentToken: 'IITB-23B0419'
+            },
+            {
+                id: 'ddb-1002',
+                hostel: 'Hostel 12 Dining Hall',
+                mealType: 'Breakfast',
+                taste: 2,
+                hygiene: 3,
+                portion: 2,
+                comment: 'Masala dosa was cold and soggy by 8:45 AM, and the sambar tasted very watery. Long queue at the coffee counter.',
+                timestamp: '38 mins ago',
+                studentToken: 'IITB-24M1102'
+            },
+            {
+                id: 'ddb-1003',
+                hostel: 'Central Mess',
+                mealType: 'Dinner',
+                taste: 4,
+                hygiene: 5,
+                portion: 4,
+                comment: 'Very clean dining hall and sanitized plates. Chicken curry and dal tadka were well-cooked and flavorful.',
+                timestamp: '2 hours ago',
+                studentToken: 'IITB-22D0891'
+            },
+            {
+                id: 'ddb-1004',
+                hostel: 'Hostel 4 Mess',
+                mealType: 'Snacks',
+                taste: 2,
+                hygiene: 2,
+                portion: 3,
+                comment: 'Samosas were overly oily and cold, and the tea dispenser ran out early. Please improve evening snacks quality.',
+                timestamp: '4 hours ago',
+                studentToken: 'IITB-25B0074'
+            },
+            {
+                id: 'ddb-1005',
+                hostel: 'Hostel 10 Girls Mess',
+                mealType: 'Lunch',
+                taste: 4,
+                hygiene: 5,
+                portion: 4,
+                comment: 'Fresh phulkas served straight off the tawa! Curd and salad bar were spotless and well-stocked.',
+                timestamp: '5 hours ago',
+                studentToken: 'IITB-23B1908'
+            },
+            {
+                id: 'ddb-1006',
+                hostel: 'Hostel 12 Dining Hall',
+                mealType: 'Dinner',
+                taste: 3,
+                hygiene: 4,
+                portion: 3,
+                comment: 'Rajma chawal was decent and filling, though rotis became slightly dry toward the end of dinner hours.',
+                timestamp: 'Yesterday, 9:15 PM',
+                studentToken: 'IITB-24B0553'
+            },
+            {
+                id: 'ddb-1007',
+                hostel: 'Central Mess',
+                mealType: 'Breakfast',
+                taste: 5,
+                hygiene: 5,
+                portion: 5,
+                comment: 'Poha, boiled eggs, and fresh banana shake were delicious! Zero waiting time and super hygienic.',
+                timestamp: 'Yesterday, 8:20 AM',
+                studentToken: 'IITB-21D0312'
+            }
+        ];
+
+        // Application Runtime State
+        let feedbackRecords = [];
+        let currentRatings = { taste: 4, hygiene: 4, portion: 4 };
+        let activeMealFilter = null; // null or 'Breakfast' | 'Lunch' | 'Snacks' | 'Dinner'
+        let activeSentimentFilter = 'ALL'; // 'ALL' | 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'
+
+        /**
+         * ============================================================================
+         * 2. SIMULATED AMAZON COMPREHEND NLP ENGINE (SENTIMENT + KEY PHRASES)
+         * ============================================================================
+         */
+        const POSITIVE_LEXICON = [
+            'delicious', 'fresh', 'hot', 'clean', 'great', 'good', 'super', 'flavorful',
+            'well-cooked', 'hygienic', 'spotless', 'fast', 'tasty', 'amazing', 'love',
+            'loved', 'awesome', 'perfect', 'filling', 'sanitized', 'soft', 'crispy', 'best'
+        ];
+
+        const NEGATIVE_LEXICON = [
+            'cold', 'soggy', 'watery', 'oily', 'dirty', 'slow', 'bad', 'worst', 'stale',
+            'undercooked', 'burnt', 'bland', 'dry', 'raw', 'hair', 'unhygienic', 'poor',
+            'long queue', 'ran out', 'smelly', 'terrible', 'horrible', 'awful', 'disappointing'
+        ];
+
+        // Domain-specific campus dining key phrases to highlight
+        const DOMAIN_PHRASES = [
+            'paneer butter masala', 'jeera rice', 'masala dosa', 'sambar', 'coffee counter',
+            'chicken curry', 'dal tadka', 'samosas', 'tea dispenser', 'evening snacks',
+            'fresh phulkas', 'salad bar', 'rajma chawal', 'rotis', 'poha', 'boiled eggs',
+            'portion size', 'counter service', 'long queue', 'clean plates', 'dining hall',
+            'watery dal', 'cold roti', 'paneer curry', 'serving speed'
+        ];
+
+        /**
+         * Analyzes review text and optional star average to produce an Amazon Comprehend-style response:
+         * { sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE', confidence: number, keyPhrases: string[] }
+         */
+        function analyzeWithComprehend(text, avgStarRating = null) {
+            const cleanText = (text || '').toLowerCase();
+            let posHits = 0;
+            let negHits = 0;
+
+            POSITIVE_LEXICON.forEach(word => {
+                if (cleanText.includes(word)) posHits++;
+            });
+
+            NEGATIVE_LEXICON.forEach(word => {
+                if (cleanText.includes(word)) negHits++;
+            });
+
+            // Blend lexical score with star rating signal if provided
+            let score = (posHits - negHits) * 0.25;
+            if (avgStarRating !== null) {
+                score += (avgStarRating - 3.0) * 0.35;
+            }
+
+            let sentiment = 'NEUTRAL';
+            let confidence = 0.78;
+
+            if (score >= 0.22) {
+                sentiment = 'POSITIVE';
+                confidence = Math.min(0.99, 0.76 + Math.abs(score) * 0.18);
+            } else if (score <= -0.18) {
+                sentiment = 'NEGATIVE';
+                confidence = Math.min(0.99, 0.77 + Math.abs(score) * 0.18);
+            } else {
+                sentiment = 'NEUTRAL';
+                confidence = Math.min(0.94, 0.71 + (0.2 - Math.abs(score)) * 0.8);
+            }
+
+            // Extract matching domain key phrases + significant adjective-noun pairs
+            const extracted = new Set();
+            DOMAIN_PHRASES.forEach(phrase => {
+                if (cleanText.includes(phrase)) {
+                    extracted.add(phrase);
+                }
+            });
+
+            // Fallback phrase extraction if fewer than 2 domain phrases matched
+            if (extracted.size < 2) {
+                const words = cleanText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+                for (let i = 0; i < words.length - 1; i++) {
+                    if (POSITIVE_LEXICON.includes(words[i]) || NEGATIVE_LEXICON.includes(words[i])) {
+                        if (words[i + 1] && words[i + 1].length > 2) {
+                            extracted.add(`${words[i]} ${words[i + 1]}`);
+                        }
+                    }
+                }
+            }
+
+            if (extracted.size === 0) {
+                extracted.add('meal quality');
+            }
+
+            return {
+                sentiment,
+                confidence: Number(confidence.toFixed(2)),
+                keyPhrases: Array.from(extracted).slice(0, 4)
+            };
+        }
+
+        /**
+         * ============================================================================
+         * 3. INITIALIZATION & LOCALSTORAGE PERSISTENCE (SIMULATED DYNAMODB)
+         * ============================================================================
+         */
+        function loadRecords() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        feedbackRecords = parsed;
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not read localStorage, falling back to default dataset.', err);
+            }
+
+            // Enrich initial demo data with Comprehend analysis
+            feedbackRecords = INITIAL_DEMO_DATA.map(item => {
+                const avg = (item.taste + item.hygiene + item.portion) / 3;
+                const nlp = analyzeWithComprehend(item.comment, avg);
+                return {
+                    ...item,
+                    avgRating: Number(avg.toFixed(1)),
+                    sentiment: nlp.sentiment,
+                    confidence: nlp.confidence,
+                    keyPhrases: nlp.keyPhrases
+                };
+            });
+            saveRecords();
+        }
+
+        function saveRecords() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(feedbackRecords));
+            } catch (err) {
+                console.warn('Could not save to localStorage.', err);
+            }
+            updateNavBadge();
+        }
+
+        function resetDemoData() {
+            localStorage.removeItem(STORAGE_KEY);
+            activeMealFilter = null;
+            activeSentimentFilter = 'ALL';
+            document.getElementById('dashboard-hostel-filter').value = 'ALL';
+            document.getElementById('sns-alert-panel').classList.add('hidden');
+            loadRecords();
+            renderDashboard();
+            showToast('Demo dataset restored to initial IITB campus records.', 'info');
+        }
+
+        function updateNavBadge() {
+            const badge = document.getElementById('nav-badge-count');
+            if (badge) badge.textContent = feedbackRecords.length;
+        }
+
+        /**
+         * ============================================================================
+         * 4. NAVIGATION & STUDENT PORTAL INTERACTIONS
+         * ============================================================================
+         */
+        function switchView(viewName) {
+            const studentView = document.getElementById('view-student');
+            const dashboardView = document.getElementById('view-dashboard');
+            const navStudent = document.getElementById('nav-student');
+            const navDashboard = document.getElementById('nav-dashboard');
+
+            if (viewName === 'student') {
+                studentView.classList.remove('hidden');
+                dashboardView.classList.add('hidden');
+
+                navStudent.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 bg-aws-amber text-aws-squid shadow-sm';
+                navDashboard.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 text-slate-300 hover:text-white';
+            } else {
+                studentView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+
+                navDashboard.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 bg-aws-amber text-aws-squid shadow-sm';
+                navStudent.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 text-slate-300 hover:text-white';
+
+                renderDashboard();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectMealType(meal) {
+            document.getElementById('selected-meal-type').value = meal;
+            const buttons = document.querySelectorAll('.meal-btn');
+            buttons.forEach(btn => {
+                if (btn.dataset.meal === meal) {
+                    btn.className = 'meal-btn p-3 rounded-xl border text-sm font-semibold transition flex flex-col items-center justify-center gap-1 border-amber-500 bg-amber-50 text-amber-900 ring-2 ring-amber-500/30';
+                } else {
+                    btn.className = 'meal-btn p-3 rounded-xl border text-sm font-semibold transition flex flex-col items-center justify-center gap-1 border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100';
+                }
+            });
+        }
+
+        function renderStarInputs() {
+            ['taste', 'hygiene', 'portion'].forEach(category => {
+                const container = document.getElementById(`stars-${category}`);
+                container.innerHTML = '';
+                const value = currentRatings[category];
+
+                for (let i = 1; i <= 5; i++) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.setAttribute('aria-label', `Rate ${category} ${i} stars`);
+                    btn.className = `p-1.5 rounded-lg transition transform hover:scale-110 focus:outline-none ${i <= value ? 'text-amber-400' : 'text-slate-300 hover:text-amber-200'}`;
+                    btn.innerHTML = `
+                        <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                    `;
+                    btn.onclick = () => {
+                        currentRatings[category] = i;
+                        renderStarInputs();
+                        const textVal = document.getElementById('review-text').value;
+                        if (textVal.trim()) updateLiveNlpPreview(textVal);
+                    };
+                    container.appendChild(btn);
+                }
+            });
+        }
+
+        function appendQuickPhrase(phrase) {
+            const textarea = document.getElementById('review-text');
+            const current = textarea.value.trim();
+            textarea.value = current ? `${current} ${phrase}` : phrase;
+            updateLiveNlpPreview(textarea.value);
+        }
+
+        function updateLiveNlpPreview(text) {
+            const badge = document.getElementById('preview-sentiment-badge');
+            const phrasesEl = document.getElementById('preview-phrases');
+
+            if (!text || text.trim().length < 3) {
+                badge.textContent = 'Waiting for text...';
+                badge.className = 'px-2 py-0.5 rounded-full font-semibold bg-slate-700 text-slate-300';
+                phrasesEl.textContent = 'Type a comment to extract key phrases';
+                return;
+            }
+
+            const avg = (currentRatings.taste + currentRatings.hygiene + currentRatings.portion) / 3;
+            const result = analyzeWithComprehend(text, avg);
+
+            if (result.sentiment === 'POSITIVE') {
+                badge.textContent = `POSITIVE (${Math.round(result.confidence * 100)}%)`;
+                badge.className = 'px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            } else if (result.sentiment === 'NEGATIVE') {
+                badge.textContent = `NEGATIVE (${Math.round(result.confidence * 100)}%)`;
+                badge.className = 'px-2 py-0.5 rounded-full font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+            } else {
+                badge.textContent = `NEUTRAL (${Math.round(result.confidence * 100)}%)`;
+                badge.className = 'px-2 py-0.5 rounded-full font-semibold bg-slate-600 text-slate-200';
+            }
+
+            phrasesEl.textContent = 'Key Phrases: ' + result.keyPhrases.map(p => `"${p}"`).join(', ');
+        }
+
+        function handleFeedbackSubmit(event) {
+            event.preventDefault();
+
+            const hostel = document.getElementById('mess-select').value;
+            const mealType = document.getElementById('selected-meal-type').value;
+            const comment = document.getElementById('review-text').value.trim();
+            const isAnonymous = document.getElementById('anonymous-check').checked;
+
+            if (!comment) {
+                showToast('Please enter a short review before submitting.', 'error');
+                return;
+            }
+
+            const avgRating = Number(((currentRatings.taste + currentRatings.hygiene + currentRatings.portion) / 3).toFixed(1));
+            const nlpResult = analyzeWithComprehend(comment, avgRating);
+
+            const randomDigits = Math.floor(1000 + Math.random() * 9000);
+            const newRecord = {
+                id: 'ddb-' + Date.now(),
+                hostel,
+                mealType,
+                taste: currentRatings.taste,
+                hygiene: currentRatings.hygiene,
+                portion: currentRatings.portion,
+                avgRating,
+                comment,
+                sentiment: nlpResult.sentiment,
+                confidence: nlpResult.confidence,
+                keyPhrases: nlpResult.keyPhrases,
+                timestamp: 'Just now',
+                studentToken: isAnonymous ? `IITB-ANON-${randomDigits}` : `IITB-24B${randomDigits}`
+            };
+
+            // Prepend to state & persist to simulated DynamoDB
+            feedbackRecords.unshift(newRecord);
+            saveRecords();
+
+            // Show confirmation banner on student view
+            const successCard = document.getElementById('submission-success-card');
+            const summaryText = document.getElementById('submission-summary-text');
+            summaryText.innerHTML = `Your <strong>${avgRating} ★</strong> review for <strong>${hostel} (${mealType})</strong> was classified as <span class="font-bold underline">${nlpResult.sentiment}</span> (${Math.round(nlpResult.confidence * 100)}% confidence).`;
+            successCard.classList.remove('hidden');
+
+            showToast(`Feedback saved to DynamoDB (${nlpResult.sentiment})!`, 'success');
+
+            // If negative sentiment submitted, automatically prepare SNS spike check
+            if (nlpResult.sentiment === 'NEGATIVE') {
+                showToast('Negative sentiment flagged for Mess Committee review.', 'warning');
+            }
+        }
+
+        function resetFormForAnother() {
+            document.getElementById('review-text').value = '';
+            currentRatings = { taste: 4, hygiene: 4, portion: 4 };
+            renderStarInputs();
+            updateLiveNlpPreview('');
+            document.getElementById('submission-success-card').classList.add('hidden');
+        }
+
+        /**
+         * ============================================================================
+         * 5. MESS COMMITTEE DASHBOARD ANALYTICS & VISUALIZATION
+         * ============================================================================
+         */
+        function renderDashboard() {
+            const hostelFilter = document.getElementById('dashboard-hostel-filter').value;
+
+            // Filter by selected hostel first (for top-level KPIs and charts)
+            const hostelFiltered = hostelFilter === 'ALL'
+                ? feedbackRecords
+                : feedbackRecords.filter(r => r.hostel === hostelFilter);
+
+            const total = hostelFiltered.length;
+
+            // Calculate KPI metrics
+            let sumAvg = 0, sumTaste = 0, sumHygiene = 0, sumPortion = 0;
+            let posCount = 0, neuCount = 0, negCount = 0;
+
+            hostelFiltered.forEach(r => {
+                sumAvg += r.avgRating;
+                sumTaste += r.taste;
+                sumHygiene += r.hygiene;
+                sumPortion += r.portion;
+                if (r.sentiment === 'POSITIVE') posCount++;
+                else if (r.sentiment === 'NEGATIVE') negCount++;
+                else neuCount++;
+            });
+
+            const overallAvg = total ? (sumAvg / total).toFixed(1) : '0.0';
+            const avgTaste = total ? (sumTaste / total).toFixed(1) : '0.0';
+            const avgHygiene = total ? (sumHygiene / total).toFixed(1) : '0.0';
+            const avgPortion = total ? (sumPortion / total).toFixed(1) : '0.0';
+
+            const posPct = total ? Math.round((posCount / total) * 100) : 0;
+            const negPct = total ? Math.round((negCount / total) * 100) : 0;
+            const neuPct = total ? Math.max(0, 100 - posPct - negPct) : 0;
+
+            // Update KPI DOM
+            document.getElementById('kpi-avg-rating').textContent = overallAvg;
+            document.getElementById('kpi-total-count').textContent = total;
+            document.getElementById('kpi-positive-pct').textContent = `${posPct}%`;
+            document.getElementById('kpi-positive-count').textContent = `(${posCount} reviews)`;
+            document.getElementById('kpi-negative-pct').textContent = `${negPct}%`;
+            document.getElementById('kpi-negative-count').textContent = `(${negCount} flagged)`;
+
+            document.getElementById('dim-taste').textContent = `${avgTaste} ★`;
+            document.getElementById('dim-hygiene').textContent = `${avgHygiene} ★`;
+            document.getElementById('dim-portion').textContent = `${avgPortion} ★`;
+
+            // Update Comprehend Stacked Bar & Legend
+            document.getElementById('bar-pos').style.width = `${posPct}%`;
+            document.getElementById('bar-neu').style.width = `${neuPct}%`;
+            document.getElementById('bar-neg').style.width = `${negPct}%`;
+
+            document.getElementById('legend-pos').textContent = `${posCount} (${posPct}%)`;
+            document.getElementById('legend-neu').textContent = `${neuCount} (${neuPct}%)`;
+            document.getElementById('legend-neg').textContent = `${negCount} (${negPct}%)`;
+
+            // Render Interactive Meal Bar Chart
+            renderMealBarChart(hostelFiltered);
+
+            // Render Trending Key Phrases
+            renderTrendingKeyPhrases(hostelFiltered);
+
+            // Render Live Feed (applying meal & sentiment filters)
+            renderReviewsFeed(hostelFiltered);
+        }
+
+        function renderMealBarChart(records) {
+            const meals = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
+            const chartContainer = document.getElementById('meal-bar-chart');
+            chartContainer.innerHTML = '';
+
+            meals.forEach(meal => {
+                const mealRecords = records.filter(r => r.mealType === meal);
+                const count = mealRecords.length;
+                const avg = count
+                    ? (mealRecords.reduce((acc, cur) => acc + cur.avgRating, 0) / count)
+                    : 0;
+
+                const heightPct = count ? Math.max(18, Math.round((avg / 5) * 100)) : 8;
+
+                // Color coding based on rating health
+                let barColor = 'bg-slate-300';
+                if (count > 0) {
+                    if (avg >= 4.0) barColor = 'bg-emerald-500 hover:bg-emerald-600';
+                    else if (avg >= 3.0) barColor = 'bg-aws-amber hover:bg-aws-amberHover';
+                    else barColor = 'bg-rose-500 hover:bg-rose-600';
+                }
+
+                const isSelected = activeMealFilter === meal;
+                const ringClass = isSelected ? 'ring-2 ring-aws-squid ring-offset-2' : '';
+
+                const col = document.createElement('button');
+                col.type = 'button';
+                col.onclick = () => toggleMealFilter(meal);
+                col.className = 'flex flex-col items-center justify-end h-full group focus:outline-none';
+                col.innerHTML = `
+                    <div class="text-xs font-bold text-slate-700 mb-1.5 transition group-hover:scale-105">
+                        ${count ? avg.toFixed(1) + ' ★' : 'N/A'}
+                    </div>
+                    <div class="w-full max-w-[56px] rounded-t-xl ${barColor} ${ringClass} transition-all duration-500 flex items-end justify-center pb-2 shadow-sm" style="height: ${heightPct}%">
+                        <span class="text-[11px] font-bold text-white/95">${count}</span>
+                    </div>
+                    <div class="mt-2.5 text-xs font-semibold ${isSelected ? 'text-aws-squid underline' : 'text-slate-600'}">
+                        ${meal}
+                    </div>
+                `;
+                chartContainer.appendChild(col);
+            });
+
+            // Update active meal filter pill
+            const pill = document.getElementById('active-meal-filter-pill');
+            if (activeMealFilter) {
+                pill.classList.remove('hidden');
+                pill.classList.add('inline-flex');
+                document.getElementById('active-meal-filter-name').textContent = activeMealFilter;
+            } else {
+                pill.classList.add('hidden');
+                pill.classList.remove('inline-flex');
+            }
+        }
+
+        function toggleMealFilter(meal) {
+            activeMealFilter = (activeMealFilter === meal) ? null : meal;
+            renderDashboard();
+        }
+
+        function clearMealFilter() {
+            activeMealFilter = null;
+            renderDashboard();
+        }
+
+        function setSentimentFilter(sentiment) {
+            activeSentimentFilter = sentiment;
+            ['ALL', 'POSITIVE', 'NEUTRAL', 'NEGATIVE'].forEach(s => {
+                const btn = document.getElementById(`sfilter-${s}`);
+                if (s === sentiment) {
+                    btn.className = 'sfilter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-aws-squid text-white transition';
+                } else {
+                    btn.className = 'sfilter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+                }
+            });
+            renderDashboard();
+        }
+
+        function renderTrendingKeyPhrases(records) {
+            const container = document.getElementById('trending-phrases-container');
+            const freqMap = {};
+
+            records.forEach(r => {
+                (r.keyPhrases || []).forEach(phrase => {
+                    freqMap[phrase] = (freqMap[phrase] || 0) + 1;
+                });
+            });
+
+            const sortedPhrases = Object.entries(freqMap)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6);
+
+            if (sortedPhrases.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-400">No phrases extracted yet.</span>';
+                return;
+            }
+
+            container.innerHTML = sortedPhrases.map(([phrase, count]) => `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                    <span>${phrase}</span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-white text-slate-500">${count}</span>
+                </span>
+            `).join('');
+        }
+
+        function renderReviewsFeed(hostelFilteredRecords) {
+            const feedContainer = document.getElementById('reviews-feed-list');
+
+            let filtered = hostelFilteredRecords;
+            if (activeMealFilter) {
+                filtered = filtered.filter(r => r.mealType === activeMealFilter);
+            }
+            if (activeSentimentFilter !== 'ALL') {
+                filtered = filtered.filter(r => r.sentiment === activeSentimentFilter);
+            }
+
+            if (filtered.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="p-10 text-center text-slate-500">
+                        <p class="font-semibold text-slate-700">No feedback matches the selected filters.</p>
+                        <p class="text-xs mt-1">Try clearing the meal or sentiment filter above.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            feedContainer.innerHTML = filtered.map(item => {
+                let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                if (item.sentiment === 'POSITIVE') badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                if (item.sentiment === 'NEGATIVE') badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+
+                const phraseTags = (item.keyPhrases || []).map(p => `
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200/70">
+                        #${p}
+                    </span>
+                `).join('');
+
+                return `
+                    <article class="p-5 sm:p-6 hover:bg-slate-50/80 transition">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-sm text-slate-900">${item.hostel}</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">${item.mealType}</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
+                                    ${item.sentiment} (${Math.round(item.confidence * 100)}%)
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-3 text-xs text-slate-500">
+                                <span class="font-bold text-amber-600 text-sm">${item.avgRating.toFixed(1)} ★</span>
+                                <span>${item.timestamp}</span>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-slate-700 leading-relaxed mb-3">"${escapeHtml(item.comment)}"</p>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Comprehend Phrases:</span>
+                                ${phraseTags}
+                            </div>
+                            <div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                                <span>Taste: <strong class="text-slate-700">${item.taste}/5</strong></span>
+                                <span>Hygiene: <strong class="text-slate-700">${item.hygiene}/5</strong></span>
+                                <span>Portion: <strong class="text-slate-700">${item.portion}/5</strong></span>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        /**
+         * ============================================================================
+         * 6. SIMULATED AMAZON SNS WARDEN ALERT DISPATCH
+         * ============================================================================
+         */
+        function triggerSnsAlert() {
+            const hostelFilter = document.getElementById('dashboard-hostel-filter').value;
+            const scopeName = hostelFilter === 'ALL' ? 'All Campus Mess Halls' : hostelFilter;
+
+            const scopedRecords = hostelFilter === 'ALL'
+                ? feedbackRecords
+                : feedbackRecords.filter(r => r.hostel === hostelFilter);
+
+            const negativeItems = scopedRecords.filter(r => r.sentiment === 'NEGATIVE');
+            const topIssues = negativeItems.flatMap(r => r.keyPhrases).slice(0, 4);
+            const issueSummary = topIssues.length
+                ? topIssues.map(i => `"${i}"`).join(', ')
+                : '"soggy masala dosa", "watery sambar", "oily samosas"';
+
+            const panel = document.getElementById('sns-alert-panel');
+            document.getElementById('sns-alert-title').textContent =
+                `Amazon SNS Quality Digest Dispatched for ${scopeName}`;
+            document.getElementById('sns-alert-body').textContent =
+                `Detected ${negativeItems.length} negative sentiment reports out of ${scopedRecords.length} total submissions. Top Comprehend key phrases flagged for immediate kitchen inspection: ${issueSummary}.`;
+            document.getElementById('sns-timestamp').textContent =
+                `Dispatched: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+
+            panel.classList.remove('hidden');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            showToast('Amazon SNS email digest sent to Hostel Warden & Mess Council!', 'success');
+        }
+
+        /**
+         * ============================================================================
+         * 7. UTILITIES (TOAST NOTIFICATIONS & XSS SANITIZATION)
+         * ============================================================================
+         */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let bgClass = 'bg-aws-squid text-white border-slate-700';
+            if (type === 'success') bgClass = 'bg-emerald-800 text-white border-emerald-600';
+            if (type === 'warning') bgClass = 'bg-amber-700 text-white border-amber-500';
+            if (type === 'error') bgClass = 'bg-rose-800 text-white border-rose-600';
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-sm font-medium flex items-center justify-between gap-3 transition-all duration-300 ${bgClass}`;
+            toast.innerHTML = `
+                <span>${escapeHtml(message)}</span>
+                <button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white font-bold text-base leading-none">×</button>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3800);
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Bootstrap application on load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadRecords();
+            renderStarInputs();
+            updateNavBadge();
+        });
+    </script>
+</body>
+</html>
